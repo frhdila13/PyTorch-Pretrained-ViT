@@ -130,8 +130,8 @@ class ViT(nn.Module):
             pretrained_image_size = PRETRAINED_MODELS[name]['image_size']
             load_pretrained_weights(
                 self, name, 
-                load_first_conv=(in_channels == pretrained_num_channels),
-                load_fc=(num_classes == pretrained_num_classes),
+                load_first_conv=False,  # Don't load the first convolution layer
+                load_fc=(num_classes == PRETRAINED_MODELS[name]['num_classes']),
                 load_repr_layer=load_repr_layer,
                 resize_positional_embedding=(image_size != pretrained_image_size),
             )
@@ -148,6 +148,10 @@ class ViT(nn.Module):
         nn.init.constant_(self.fc.bias, 0)
         nn.init.normal_(self.positional_embedding.pos_embedding, std=0.02)  # _trunc_normal(self.positional_embedding.pos_embedding, std=0.02)
         nn.init.constant_(self.class_token, 0)
+        nn.init.kaiming_normal_(self.patch_embedding.weight, mode='fan_out', nonlinearity='relu')
+        if self.patch_embedding.bias is not None:
+            nn.init.constant_(self.patch_embedding.bias, 0)
+
 
     def forward(self, x):
         """Breaks image into patches, applies transformer, applies MLP head.
